@@ -8,10 +8,10 @@ const app = express();
 
 // All configurations
 app.use(
-  cors({
-    origin: dotenv.CORS,
-    credentials: true,
-  })
+    cors({
+        origin: dotenv.CORS,
+        credentials: true,
+    })
 );
 
 app.use(express.json({ limit: "16kb" }));

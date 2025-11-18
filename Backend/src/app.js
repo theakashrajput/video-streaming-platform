@@ -13,13 +13,16 @@ app.use(
         credentials: true,
     })
 );
-
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// All Routes
+// All Routes Imports
+import authRoutes from "./routes/auth.routes.js";
+
+// All Route Declare
+app.use("/api/v1/auth", authRoutes);
 
 // Error Handler middleware
 app.use(errorMiddleware);

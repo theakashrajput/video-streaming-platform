@@ -5,7 +5,7 @@ import { dotenv } from "../../config/env.config.js";
 
 const userSchema = new Schema(
     {
-        username: {
+        userName: {
             type: String,
             required: true,
             unique: true,

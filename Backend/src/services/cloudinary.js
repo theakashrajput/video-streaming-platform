@@ -9,8 +9,8 @@ export const uploadToCloudinary = async (localFilePath) => {
     try {
         const res = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "auto",
+            folder: "Video Streaming Platform",
         });
-        console.log(res);
 
         try {
             fs.unlinkSync(localFilePath);

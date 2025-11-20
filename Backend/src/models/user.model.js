@@ -62,40 +62,44 @@ userSchema.pre("save", async function (next) {
 });
 
 // Custom Methods
-userSchema.method("comparePassword", async function (password) {
+userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
-});
+};
 
-userSchema.method("generateAccessToken", function () {
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
-            id: this._id,
-            username: this.username,
-            email: this.email,
-            fullName: this.fullName,
+            _id: this._id
         },
         dotenv.ACCESS_TOKEN_SECRET,
         {
             expiresIn: dotenv.ACCESS_TOKEN_EXPIRES,
         }
     );
-});
+};
 
-userSchema.method("refreshAccessToken", function () {
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
-            id: this._id,
-            username: this.username,
-            email: this.email,
-            fullName: this.fullName,
+            _id: this._id
         },
-        dotenv.REFRESS_TOKEN_SECRET,
+        dotenv.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: dotenv.REFRESS_TOKEN_EXPIRES,
+            expiresIn: dotenv.REFRESH_TOKEN_EXPIRES,
         }
     );
-});
+};
 
+userSchema.methods.toSafeObj = function () {
+    const userObject = this.toObject(); // Convert Mongoose Document to plain JS object
+
+    // Remove sensitive fields
+    delete userObject.password;
+    delete userObject.refreshToken;
+    delete userObject.__v;
+
+    return userObject;
+}
 const userModel = mongoose.model("User", userSchema);
 
 export default userModel;

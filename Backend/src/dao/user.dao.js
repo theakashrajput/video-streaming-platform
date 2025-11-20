@@ -25,7 +25,7 @@ export const updateUser = async ({ id, refreshToken }) => {
         { refreshToken },
         {
             new: true,
-            runValidators: true
+            runValidators: true,
         }
     );
-}
+};

@@ -69,7 +69,7 @@ userSchema.methods.comparePassword = async function (password) {
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
-            _id: this._id
+            _id: this._id,
         },
         dotenv.ACCESS_TOKEN_SECRET,
         {
@@ -81,7 +81,7 @@ userSchema.methods.generateAccessToken = function () {
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
-            _id: this._id
+            _id: this._id,
         },
         dotenv.REFRESH_TOKEN_SECRET,
         {
@@ -99,7 +99,7 @@ userSchema.methods.toSafeObj = function () {
     delete userObject.__v;
 
     return userObject;
-}
+};
 const userModel = mongoose.model("User", userSchema);
 
 export default userModel;

@@ -1,6 +1,6 @@
 import AppError from "../utils/AppError.js";
 import { uploadToCloudinary } from "../services/cloudinary.js";
-import { createNewUser, findUser, findUserById, updateUser } from "../dao/user.dao.js";
+import { createNewUser, findUser, findUserById, findUserWithoutRemoveProperties, updateUser } from "../dao/user.dao.js";
 import jwt from "jsonwebtoken"
 import { dotenv } from "../../config/env.config.js";
 
@@ -73,7 +73,7 @@ export const userLoginService = async ({ userName, email, password }) => {
 };
 
 export const userLogoutService = async (userId) => {
-    await updateUser({_id: userId}, {refreshToken: undefined}); 
+    await updateUser({ _id: userId }, { refreshToken: undefined });
     return true;
 }
 
@@ -85,7 +85,7 @@ export const refreshAccessTokenService = async (incomingRefreshToken) => {
         throw new AppError("Invalid refresh token", 401);
     }
 
-    const user = await findUserById(decoded._id);
+    const user = await findUserWithoutRemoveProperties(decoded._id);
 
     if (!user) throw new AppError("Invalid refresh token", 401);
 
@@ -94,7 +94,7 @@ export const refreshAccessTokenService = async (incomingRefreshToken) => {
     const newAccessToken = user.generateAccessToken();
     const newRefreshToken = user.generateRefreshToken();
 
-    await updateUser({ _id: user._id }, { refreshToken: newRefreshToken });
+    await updateUser({ id: user._id, refreshToken: newRefreshToken });
 
     return { newAccessToken, newRefreshToken };
 }

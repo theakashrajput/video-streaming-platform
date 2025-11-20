@@ -42,7 +42,7 @@ export const userLogin = asyncWrapper(async (req, res) => {
 export const userLogout = asyncWrapper(async (req, res) => {
     const user = req.user;
 
-    if (user) throw new AppError("Unauthorized request", 401);
+    if (!user) throw new AppError("Unauthorized request", 401);
 
     await userLogoutService(user._id);
 

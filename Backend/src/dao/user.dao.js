@@ -9,10 +9,11 @@ export const findUserById = async (id) => {
     return await userModel.findById(id).select("-password -refreshToken");
 };
 
+export const findUserWithoutRemoveProperties = async (id) => {
+    return await userModel.findById(id);
+};
+
 export const findUser = async ({ userName, email }) => {
-    userName = userName.trim().toLowerCase();
-    email = email.trim().toLowerCase();
-    
     return await userModel.findOne({
         $or: [{ userName }, { email }],
     });

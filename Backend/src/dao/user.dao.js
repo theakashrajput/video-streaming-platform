@@ -19,10 +19,10 @@ export const findUser = async ({ userName, email }) => {
     });
 };
 
-export const updateUser = async ({ id, refreshToken }) => {
+export const updateUser = async (id, payload) => {
     return await userModel.findOneAndUpdate(
         { _id: id },
-        { refreshToken },
+        { $set: payload },
         {
             new: true,
             runValidators: true,

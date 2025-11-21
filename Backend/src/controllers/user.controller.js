@@ -1,6 +1,10 @@
 import { asyncWrapper } from "../utils/asyncWrapper.js";
 import AppResponse from "../utils/AppResponse.js";
 import {
+    changePasswordService,
+    changeProfileAvatarService,
+    changeProfileCoverImageService,
+    changeUserDetailsService,
     refreshAccessTokenService,
     registerUserService,
     userLoginService,
@@ -8,6 +12,7 @@ import {
 } from "../services/userAuth.service.js";
 import { cookieOptions } from "../../config/cookieConfig.config.js";
 import AppError from "../utils/AppError.js";
+import { findUserById } from "../dao/user.dao.js";
 
 export const userRegister = asyncWrapper(async (req, res) => {
     const { userName, email, password, fullName } = req.body;
@@ -61,7 +66,6 @@ export const userLogin = asyncWrapper(async (req, res) => {
 
 export const userLogout = asyncWrapper(async (req, res) => {
     const user = req.user;
-
     if (!user) throw new AppError("Unauthorized request", 401);
 
     await userLogoutService(user._id);
@@ -88,3 +92,59 @@ export const refreshAccessToken = asyncWrapper(async (req, res) => {
         .cookie("refreshToken", newRefreshToken, cookieOptions)
         .json(new AppResponse(200, "Access token refreshed"));
 });
+
+export const changePassword = asyncWrapper(async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) throw new AppError("All fields are required", 400);
+
+    const user = req?.user;
+
+    if (!user) throw new AppError("Unauthorized request", 401);
+
+    await changePasswordService({
+        oldPassword,
+        newPassword,
+        userId: user._id
+    });
+
+    return res
+        .status(200)
+        .json(new AppResponse(200, "Password Changed successfully"));
+});
+
+export const getCurrentUser = asyncWrapper(async (req, res) => {
+    const userId = req?.user._id;
+
+    const user = await findUserById(userId);
+
+    return res
+        .status(200)
+        .json(new AppResponse(200, "User Data fetched successfully", user.toSafeObj()));
+})
+
+export const changeProfileAvatar = asyncWrapper(async (req, res) => {
+    const avatarPath = req?.file.path;
+
+    const updated = await changeProfileAvatarService(req?.user._id, avatarPath);
+
+    return res.status(200).json(new AppResponse(200, "Avatar updated successfully", updated.toSafeObj()));
+});
+
+export const changeCoverImage = asyncWrapper(async (req, res) => {
+    const coverPath = req?.file.path;
+
+    const updated = await changeProfileCoverImageService(req?.user._id, coverPath);
+
+    return res.status(200).json(new AppResponse(200, "Cover Image updated successfully", updated.toSafeObj()));
+});
+
+export const changeUserDetails = asyncWrapper(async (req, res) => {
+    // User can only change it's fullName. 
+
+    const { fullName } = req.body;
+
+    const updated = await changeUserDetailsService(req.user?.id, fullName);
+
+    return res.status(200).json(new AppResponse(200, "Full name updated successfully", updated.toSafeObj()));
+})

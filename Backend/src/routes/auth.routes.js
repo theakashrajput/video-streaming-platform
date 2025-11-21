@@ -1,5 +1,7 @@
 import { Router } from "express";
 import {
+    changePassword,
+    changeProfileAvatar,
     refreshAccessToken,
     userLogin,
     userLogout,
@@ -24,5 +26,7 @@ router.route("/refresh-token").post(refreshAccessToken);
 
 // Protected Routes
 router.route("/logout").post(verifyJWT, userLogout);
+router.route("/change-password").post(verifyJWT, changePassword);
+router.route("/change-avatar").post(upload.single("avatar"), verifyJWT, changeProfileAvatar);
 
 export default router;

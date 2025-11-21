@@ -3,7 +3,7 @@ import { uploadToCloudinary } from "../services/cloudinary.js";
 import {
     createNewUser,
     findUser,
-    findUserWithoutRemoveProperties,
+    findUserWithoutRemoveProperties, // Or findUserWithPassword
     updateUser,
 } from "../dao/user.dao.js";
 import jwt from "jsonwebtoken";
@@ -15,10 +15,10 @@ const generateTokens = async (userPayload) => {
         const accessToken = userPayload.generateAccessToken();
         const refreshToken = userPayload.generateRefreshToken();
 
-        const updatedUser = await updateUser({
-            id: userPayload._id,
-            refreshToken,
-        });
+        const updatedUser = await updateUser(
+            userPayload._id,
+            { refreshToken }
+        );
 
         return {
             accessToken,
@@ -26,20 +26,11 @@ const generateTokens = async (userPayload) => {
             updatedUser,
         };
     } catch (error) {
-        // Only catch here if you want to throw a specific "Token Generation" error
         throw new AppError("Something went wrong while generating tokens", 500);
     }
 };
 
-// Service Functions
-export const registerUserService = async ({
-    userName,
-    email,
-    password,
-    fullName,
-    avatar,
-    coverImage,
-}) => {
+export const registerUserService = async ({ userName, email, password, fullName, avatar, coverImage }) => {
     if (!userName || !email || !password || !fullName)
         throw new AppError("All fields are required", 400);
     if (!avatar) throw new AppError("Avatar is required", 400);
@@ -64,15 +55,13 @@ export const registerUserService = async ({
         coverImage: coverImageRes?.secure_url,
     });
 
-    const { accessToken, refreshToken, updatedUser } =
-        await generateTokens(user);
+    const { accessToken, refreshToken, updatedUser } = await generateTokens(user);
 
     return { accessToken, refreshToken, updatedUser };
 };
 
 export const userLoginService = async ({ userName, email, password }) => {
-    if (!userName && !email)
-        throw new AppError("At least one field is required", 400);
+    if (!userName && !email) throw new AppError("At least one field is required", 400);
     if (!password) throw new AppError("Password is required", 400);
 
     const user = await findUser({ userName, email });
@@ -83,15 +72,16 @@ export const userLoginService = async ({ userName, email, password }) => {
 
     if (!isPasswordValid) throw new AppError("Invalid user credentials", 401);
 
-    // Pass the user object directly
-    const { accessToken, refreshToken, updatedUser } =
-        await generateTokens(user);
+    const { accessToken, refreshToken, updatedUser } = await generateTokens(user);
 
     return { accessToken, refreshToken, updatedUser };
 };
 
 export const userLogoutService = async (userId) => {
-    await updateUser({ _id: userId }, { refreshToken: undefined });
+    await updateUser(
+        userId,
+        { refreshToken: undefined }
+    );
     return true;
 };
 
@@ -114,3 +104,45 @@ export const refreshAccessTokenService = async (incomingRefreshToken) => {
 
     return { newAccessToken, newRefreshToken };
 };
+
+export const changePasswordService = async ({ oldPassword, newPassword, userId }) => {
+    const user = await findUserWithoutRemoveProperties(userId);
+
+    if (!user) throw new AppError("User not found", 404);
+
+    const isPasswordValid = await user.comparePassword(oldPassword);
+
+    if (!isPasswordValid) throw new AppError("Invalid old Password", 401);
+
+    user.password = newPassword;
+
+    await user.save();
+
+    return true;
+}
+
+export const changeProfileAvatarService = async (userId, avatarLocalPath) => {
+
+    const avatarUrl = await uploadToCloudinary(avatarLocalPath);
+
+    const updatedUser = updateUser(userId, { avatar: avatarUrl?.secure_url });
+
+    return updatedUser;
+}
+
+export const changeProfileCoverImageService = async (userId, coverImageLocalPath) => {
+
+    const coverImageUrl = await uploadToCloudinary(coverImageLocalPath);
+
+    const updatedUser = updateUser(userId, { coverImage: coverImageUrl?.secure_url });
+
+    return updatedUser;
+};
+
+export const changeUserDetailsService = async (userId, fullName) => {
+    fullName = fullName.trim();
+
+    const updatedUser = await updateUser(userId, { fullName });
+
+    return updateUser;
+}

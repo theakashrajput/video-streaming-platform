@@ -29,3 +29,15 @@ export const uploadToCloudinary = async (localFilePath) => {
         throw new AppError("Cloudinary upload failed", 500);
     }
 };
+
+export const deleteFromCloudinary = async (publicId) => {
+    try {
+        const res = await cloudinary.uploader.destroy(publicId);
+        return res;
+    } catch (error) {
+        console.error(
+            `Cloudinary deletion failed for publicId: ${publicId}`,
+            error.message
+        );
+    }
+};

@@ -1,8 +1,9 @@
 import AppError from "../utils/AppError.js";
-import { uploadToCloudinary } from "../services/cloudinary.js";
+import { deleteFromCloudinary, uploadToCloudinary } from "./cloudinary.js";
 import {
     createNewUser,
     findUser,
+    findUserById,
     findUserWithoutRemoveProperties, // Or findUserWithPassword
     updateUser,
 } from "../dao/user.dao.js";
@@ -15,10 +16,7 @@ const generateTokens = async (userPayload) => {
         const accessToken = userPayload.generateAccessToken();
         const refreshToken = userPayload.generateRefreshToken();
 
-        const updatedUser = await updateUser(
-            userPayload._id,
-            { refreshToken }
-        );
+        const updatedUser = await updateUser(userPayload._id, { refreshToken });
 
         return {
             accessToken,
@@ -30,7 +28,22 @@ const generateTokens = async (userPayload) => {
     }
 };
 
-export const registerUserService = async ({ userName, email, password, fullName, avatar, coverImage }) => {
+export const getPublicIdFromUrl = (url) => {
+    const regex = /\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/;
+
+    const match = url.match(regex);
+
+    return match ? decodeURIComponent(match[1]) : null;
+};
+
+export const registerUserService = async ({
+    userName,
+    email,
+    password,
+    fullName,
+    avatar,
+    coverImage,
+}) => {
     if (!userName || !email || !password || !fullName)
         throw new AppError("All fields are required", 400);
     if (!avatar) throw new AppError("Avatar is required", 400);
@@ -55,13 +68,15 @@ export const registerUserService = async ({ userName, email, password, fullName,
         coverImage: coverImageRes?.secure_url,
     });
 
-    const { accessToken, refreshToken, updatedUser } = await generateTokens(user);
+    const { accessToken, refreshToken, updatedUser } =
+        await generateTokens(user);
 
     return { accessToken, refreshToken, updatedUser };
 };
 
 export const userLoginService = async ({ userName, email, password }) => {
-    if (!userName && !email) throw new AppError("At least one field is required", 400);
+    if (!userName && !email)
+        throw new AppError("At least one field is required", 400);
     if (!password) throw new AppError("Password is required", 400);
 
     const user = await findUser({ userName, email });
@@ -72,16 +87,14 @@ export const userLoginService = async ({ userName, email, password }) => {
 
     if (!isPasswordValid) throw new AppError("Invalid user credentials", 401);
 
-    const { accessToken, refreshToken, updatedUser } = await generateTokens(user);
+    const { accessToken, refreshToken, updatedUser } =
+        await generateTokens(user);
 
     return { accessToken, refreshToken, updatedUser };
 };
 
 export const userLogoutService = async (userId) => {
-    await updateUser(
-        userId,
-        { refreshToken: undefined }
-    );
+    await updateUser(userId, { refreshToken: undefined });
     return true;
 };
 
@@ -100,12 +113,17 @@ export const refreshAccessTokenService = async (incomingRefreshToken) => {
     if (user.refreshToken !== incomingRefreshToken)
         throw new AppError("Refresh token is expired or used", 401);
 
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await generateTokens(user);
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+        await generateTokens(user);
 
     return { newAccessToken, newRefreshToken };
 };
 
-export const changePasswordService = async ({ oldPassword, newPassword, userId }) => {
+export const changePasswordService = async ({
+    oldPassword,
+    newPassword,
+    userId,
+}) => {
     const user = await findUserWithoutRemoveProperties(userId);
 
     if (!user) throw new AppError("User not found", 404);
@@ -119,22 +137,58 @@ export const changePasswordService = async ({ oldPassword, newPassword, userId }
     await user.save();
 
     return true;
-}
+};
 
 export const changeProfileAvatarService = async (userId, avatarLocalPath) => {
+    const user = await findUserById(userId);
+
+    if (!user) throw new AppError("Invalid user credentials", 401);
+
+    const oldImageUrl = user.avatar;
 
     const avatarUrl = await uploadToCloudinary(avatarLocalPath);
 
-    const updatedUser = updateUser(userId, { avatar: avatarUrl?.secure_url });
+    const updatedUser = await updateUser(userId, {
+        avatar: avatarUrl.secure_url,
+    });
+
+    if (oldImageUrl) {
+        const publicId = getPublicIdFromUrl(oldImageUrl);
+        if (publicId) {
+            deleteFromCloudinary(publicId).catch((err) =>
+                console.log("Background delete failed", err)
+            );
+        } else {
+            console.log("Could not extract public ID");
+        }
+    }
 
     return updatedUser;
-}
+};
 
 export const changeProfileCoverImageService = async (userId, coverImageLocalPath) => {
+    const user = await findUserById(userId);
+
+    if (!user) throw new AppError("Invalid user credentials", 401);
+
+    const oldImageUrl = user.avatar;
 
     const coverImageUrl = await uploadToCloudinary(coverImageLocalPath);
 
-    const updatedUser = updateUser(userId, { coverImage: coverImageUrl?.secure_url });
+    const updatedUser = updateUser(userId, {
+        coverImage: coverImageUrl.secure_url,
+    });
+
+    if (oldImageUrl) {
+        const publicId = getPublicIdFromUrl(oldImageUrl);
+        if (publicId) {
+            deleteFromCloudinary(publicId).catch((err) =>
+                console.log("Background delete failed", err)
+            );
+        } else {
+            console.log("Could not extract public ID");
+        }
+    }
 
     return updatedUser;
 };
@@ -145,4 +199,6 @@ export const changeUserDetailsService = async (userId, fullName) => {
     const updatedUser = await updateUser(userId, { fullName });
 
     return updateUser;
-}
+};
+
+// https://res.cloudinary.com/dcpenybwr/image/upload/v1763728001/Video%20Streaming%20Platform/n8aai9yncknarebpzgns.jpg

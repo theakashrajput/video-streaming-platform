@@ -9,7 +9,7 @@ import {
     registerUserService,
     userLoginService,
     userLogoutService,
-} from "../services/userAuth.service.js";
+} from "../services/user.service.js";
 import { cookieOptions } from "../../config/cookieConfig.config.js";
 import AppError from "../utils/AppError.js";
 import { findUserById } from "../dao/user.dao.js";
@@ -96,7 +96,8 @@ export const refreshAccessToken = asyncWrapper(async (req, res) => {
 export const changePassword = asyncWrapper(async (req, res) => {
     const { oldPassword, newPassword } = req.body;
 
-    if (!oldPassword || !newPassword) throw new AppError("All fields are required", 400);
+    if (!oldPassword || !newPassword)
+        throw new AppError("All fields are required", 400);
 
     const user = req?.user;
 
@@ -105,7 +106,7 @@ export const changePassword = asyncWrapper(async (req, res) => {
     await changePasswordService({
         oldPassword,
         newPassword,
-        userId: user._id
+        userId: user._id,
     });
 
     return res
@@ -120,31 +121,74 @@ export const getCurrentUser = asyncWrapper(async (req, res) => {
 
     return res
         .status(200)
-        .json(new AppResponse(200, "User Data fetched successfully", user.toSafeObj()));
-})
+        .json(
+            new AppResponse(
+                200,
+                "User Data fetched successfully",
+                user.toSafeObj()
+            )
+        );
+});
 
 export const changeProfileAvatar = asyncWrapper(async (req, res) => {
-    const avatarPath = req?.file.path;
+    if (!req.file || !req.file.path) {
+        throw new AppError("Avatar image is required", 400);
+    }
+
+    const avatarPath = req.file.path;
 
     const updated = await changeProfileAvatarService(req?.user._id, avatarPath);
 
-    return res.status(200).json(new AppResponse(200, "Avatar updated successfully", updated.toSafeObj()));
+    return res
+        .status(200)
+        .json(
+            new AppResponse(
+                200,
+                "Avatar updated successfully",
+                updated.toSafeObj()
+            )
+        );
 });
 
 export const changeCoverImage = asyncWrapper(async (req, res) => {
-    const coverPath = req?.file.path;
+    if (!req.file || !req.file.path) {
+        throw new AppError("Cover image is required", 400);
+    }
 
-    const updated = await changeProfileCoverImageService(req?.user._id, coverPath);
+    const coverPath = req.file.path;
 
-    return res.status(200).json(new AppResponse(200, "Cover Image updated successfully", updated.toSafeObj()));
+    const updated = await changeProfileCoverImageService(
+        req?.user._id,
+        coverPath
+    );
+
+    return res
+        .status(200)
+        .json(
+            new AppResponse(
+                200,
+                "Cover Image updated successfully",
+                updated.toSafeObj()
+            )
+        );
 });
 
 export const changeUserDetails = asyncWrapper(async (req, res) => {
-    // User can only change it's fullName. 
+    // User can only change it's fullName.
 
     const { fullName } = req.body;
 
+    if (!fullName) throw new AppError("Full name is required", 401);
+
     const updated = await changeUserDetailsService(req.user?.id, fullName);
 
-    return res.status(200).json(new AppResponse(200, "Full name updated successfully", updated.toSafeObj()));
-})
+    return res
+        .status(200)
+        .json(
+            new AppResponse(
+                200,
+                "Full name updated successfully",
+                updated.toSafeObj()
+            )
+        );
+});

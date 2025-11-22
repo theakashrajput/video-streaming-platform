@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+    changeCoverImage,
     changePassword,
     changeProfileAvatar,
     refreshAccessToken,
@@ -27,6 +28,13 @@ router.route("/refresh-token").post(refreshAccessToken);
 // Protected Routes
 router.route("/logout").post(verifyJWT, userLogout);
 router.route("/change-password").post(verifyJWT, changePassword);
-router.route("/change-avatar").post(upload.single("avatar"), verifyJWT, changeProfileAvatar);
+router
+    .route("/change-avatar")
+    .post(upload.single("avatar"), verifyJWT, changeProfileAvatar);
+router
+    .route("/change-coverImage")
+    .post(upload.single("coverImage"), verifyJWT, changeCoverImage);
+
+
 
 export default router;

@@ -198,10 +198,11 @@ export const changeUserDetails = asyncWrapper(async (req, res) => {
 export const getChannelProfile = asyncWrapper(async (req, res) => {
     const userName = req.params.userName;
 
-    if (!userName.trim())
-        throw new AppError("Channel not found", 404);
+    if (!userName.trim()) throw new AppError("Channel not found", 404);
 
-    const currentUserId = req.user?._id ? new mongoose.Types.ObjectId(String(req.user._id)) : null;
+    const currentUserId = req.user?._id
+        ? new mongoose.Types.ObjectId(String(req.user._id))
+        : null;
 
     const channel = await userModel.aggregate([
         {
@@ -228,26 +229,30 @@ export const getChannelProfile = asyncWrapper(async (req, res) => {
         {
             $addFields: {
                 channelSubscribersCount: {
-                    $size: "$subscribers"
+                    $size: "$subscribers",
                 },
                 channelSubscribedChannelsCount: {
-                    $size: "$subscribed"
+                    $size: "$subscribed",
                 },
                 isSubscribed: {
                     $cond: {
                         if: {
                             $and: [
                                 { $ne: [currentUserId, null] },
-                                { $in: [currentUserId, "$subscribers.subscriber"] }
-                            ]
+                                {
+                                    $in: [
+                                        currentUserId,
+                                        "$subscribers.subscriber",
+                                    ],
+                                },
+                            ],
                         },
                         then: true,
-                        else: false
-                    }
-                }
-            }
-        }
-        ,
+                        else: false,
+                    },
+                },
+            },
+        },
         {
             $project: {
                 userName: 1,
@@ -256,12 +261,74 @@ export const getChannelProfile = asyncWrapper(async (req, res) => {
                 coverImage: 1,
                 channelSubscribersCount: 1,
                 channelSubscribedChannelsCount: 1,
-                isSubscribed: 1
-            }
-        }
+                isSubscribed: 1,
+            },
+        },
     ]);
 
-    if (channel.length) throw new AppError("Channel not found", 404);
+    if (!channel.length) throw new AppError("Channel not found", 404);
 
-    return res.status(200).json(new AppResponse(200, "Data fetched successfully", channel[0]));
+    return res
+        .status(200)
+        .json(new AppResponse(200, "Data fetched successfully", channel[0]));
+});
+
+export const getWatchHistory = asyncWrapper(async (req, res) => {
+    const currentUserId = req.user?._id
+        ? new mongoose.Types.ObjectId(String(req.user._id))
+        : null;
+
+    const watchHistory = await userModel.aggregate([
+        {
+            $match: {
+                _id: currentUserId,
+            },
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        userName: 1,
+                                        fullName: 1,
+                                        avatar: 1,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner",
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                watchHistory: 1,
+            },
+        },
+    ]);
+
+    if (!watchHistory.length) throw new AppError("Please login first", 400);
+
+    return res
+        .status(200)
+        .json(new AppResponse(200, "Data fetched successfully", watchHistory));
 });

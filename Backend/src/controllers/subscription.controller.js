@@ -26,13 +26,11 @@ export const toggleSubscription = asyncWrapper(async (req, res) => {
         // Unsubscribe them
         await subscriptionModel.findByIdAndDelete(existingSubscription._id);
 
-        return res
-            .status(200)
-            .json(
-                new AppResponse(200, "Unsubscribed successfully", {
-                    subscribed: false,
-                })
-            );
+        return res.status(200).json(
+            new AppResponse(200, "Unsubscribed successfully", {
+                subscribed: false,
+            })
+        );
     } else {
         // Subscribe them
         await subscriptionModel.create({
@@ -40,12 +38,10 @@ export const toggleSubscription = asyncWrapper(async (req, res) => {
             subscriber: subscriberId,
         });
 
-        return res
-            .status(201)
-            .json(
-                new AppResponse(201, "Subscribed successfully", {
-                    subscribed: true,
-                })
-            );
+        return res.status(201).json(
+            new AppResponse(201, "Subscribed successfully", {
+                subscribed: true,
+            })
+        );
     }
 });

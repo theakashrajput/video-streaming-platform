@@ -20,9 +20,11 @@ app.use(cookieParser());
 
 // All Routes Imports
 import authRoutes from "./routes/auth.routes.js";
+import subscriptionRoutes from "./routes/subscription.routes.js";
 
 // All Route Declare
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/subscription", subscriptionRoutes);
 
 // Error Handler middleware
 app.use(errorMiddleware);

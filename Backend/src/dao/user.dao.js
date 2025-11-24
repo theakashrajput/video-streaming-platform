@@ -19,6 +19,12 @@ export const findUser = async ({ userName, email }) => {
     });
 };
 
+export const findUserByPayload = async (payload) => {
+    return await userModel.findOne({
+        ...payload
+    })
+};
+
 export const updateUser = async (id, payload) => {
     return await userModel.findOneAndUpdate(
         { _id: id },

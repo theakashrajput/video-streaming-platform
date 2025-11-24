@@ -3,6 +3,7 @@ import {
     changeCoverImage,
     changePassword,
     changeProfileAvatar,
+    getChannelProfile,
     refreshAccessToken,
     userLogin,
     userLogout,
@@ -35,6 +36,8 @@ router
     .route("/change-coverImage")
     .post(upload.single("coverImage"), verifyJWT, changeCoverImage);
 
-
+router
+    .route("/c/:userName")
+    .get(verifyJWT, getChannelProfile);
 
 export default router;

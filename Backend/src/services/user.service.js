@@ -4,7 +4,7 @@ import {
     createNewUser,
     findUser,
     findUserById,
-    findUserWithoutRemoveProperties, // Or findUserWithPassword
+    findUserWithoutRemoveProperties,
     updateUser,
 } from "../dao/user.dao.js";
 import jwt from "jsonwebtoken";

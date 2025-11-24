@@ -13,6 +13,7 @@ import {
 import { cookieOptions } from "../../config/cookieConfig.config.js";
 import AppError from "../utils/AppError.js";
 import { findUserById } from "../dao/user.dao.js";
+import userModel from "../models/user.model.js";
 
 export const userRegister = asyncWrapper(async (req, res) => {
     const { userName, email, password, fullName } = req.body;
@@ -192,3 +193,41 @@ export const changeUserDetails = asyncWrapper(async (req, res) => {
             )
         );
 });
+
+export const getChannelProfile = asyncWrapper(async (req, res) => {
+    const userName = req.params.userName;
+
+    if (!userName.toLowerCase().trim()) throw new AppError("Channel not found", 404);
+
+    const channel = await userModel.aggregate([
+        {
+            $match: {
+                userName: userName.toLowerCase().trim()
+            },
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribed"
+            }
+        },
+    ])
+
+    console.log(channel);
+
+    return res
+        .status(200)
+        .json({
+            message: "Ok"
+        });
+})

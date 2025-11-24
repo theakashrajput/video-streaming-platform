@@ -14,6 +14,7 @@ import { cookieOptions } from "../../config/cookieConfig.config.js";
 import AppError from "../utils/AppError.js";
 import { findUserById } from "../dao/user.dao.js";
 import userModel from "../models/user.model.js";
+import mongoose from "mongoose";
 
 export const userRegister = asyncWrapper(async (req, res) => {
     const { userName, email, password, fullName } = req.body;
@@ -197,12 +198,15 @@ export const changeUserDetails = asyncWrapper(async (req, res) => {
 export const getChannelProfile = asyncWrapper(async (req, res) => {
     const userName = req.params.userName;
 
-    if (!userName.toLowerCase().trim()) throw new AppError("Channel not found", 404);
+    if (!userName.trim())
+        throw new AppError("Channel not found", 404);
+
+    const currentUserId = req.user?._id ? new mongoose.Types.ObjectId(String(req.user._id)) : null;
 
     const channel = await userModel.aggregate([
         {
             $match: {
-                userName: userName.toLowerCase().trim()
+                userName: userName.toLowerCase().trim(),
             },
         },
         {
@@ -210,24 +214,54 @@ export const getChannelProfile = asyncWrapper(async (req, res) => {
                 from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
-                as: "subscribers"
-            }
+                as: "subscribers",
+            },
         },
         {
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
-                as: "subscribed"
-            }
+                as: "subscribed",
+            },
         },
-    ])
+        {
+            $addFields: {
+                channelSubscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelSubscribedChannelsCount: {
+                    $size: "$subscribed"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {
+                            $and: [
+                                { $ne: [currentUserId, null] },
+                                { $in: [currentUserId, "$subscribers.subscriber"] }
+                            ]
+                        },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        }
+        ,
+        {
+            $project: {
+                userName: 1,
+                fullName: 1,
+                avatar: 1,
+                coverImage: 1,
+                channelSubscribersCount: 1,
+                channelSubscribedChannelsCount: 1,
+                isSubscribed: 1
+            }
+        }
+    ]);
 
-    console.log(channel);
+    if (channel.length) throw new AppError("Channel not found", 404);
 
-    return res
-        .status(200)
-        .json({
-            message: "Ok"
-        });
-})
+    return res.status(200).json(new AppResponse(200, "Data fetched successfully", channel[0]));
+});

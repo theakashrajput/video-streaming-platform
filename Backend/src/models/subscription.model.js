@@ -5,16 +5,16 @@ const subscriptionSchema = new Schema(
         channel: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: true
+            required: true,
         },
         subscriber: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: true
-        }
+            required: true,
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
 );
 

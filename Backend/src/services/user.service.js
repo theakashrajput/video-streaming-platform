@@ -166,7 +166,10 @@ export const changeProfileAvatarService = async (userId, avatarLocalPath) => {
     return updatedUser;
 };
 
-export const changeProfileCoverImageService = async (userId, coverImageLocalPath) => {
+export const changeProfileCoverImageService = async (
+    userId,
+    coverImageLocalPath
+) => {
     const user = await findUserById(userId);
 
     if (!user) throw new AppError("Invalid user credentials", 401);
